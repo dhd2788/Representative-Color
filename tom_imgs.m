@@ -10,7 +10,7 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         %image file name
         tom_image = ImageFiles(j).name;
         
-        if ~strcmp(tom_image, '') % for debugging one image at a time
+        if strcmp(tom_image, 'zpeppers.png') % for debugging one image at a time
         
         %% full path names
         tom_img_path = "crop_768x768/" + tom_image;
@@ -53,28 +53,12 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         array_height = 3;
         array_length = array_width*array_height;
         tom_img_lab = rgb2lab(squeeze(tom_img_array_list)); % squeeze to convert 1x20x3 to 20x3
-        threshold = 2.0;
+        threshold = 3.0; % how many delta E's apart the colors must be
         
         % this is where we change the delta E threshold for each individual
         % image. Most stay at 2.0 but these images had too many colors so
         % the threshold was increased
-        if strcmp(tom_image,'green22days1_hdrOff.png')
-            threshold = 3.5;
-        elseif strcmp(tom_image,'green_2_17days_1_hdrOff.png')
-            threshold = 3.4;
-        elseif strcmp(tom_image,'green_2_2_hdrOff.png')
-            threshold = 2.5;
-        elseif strcmp(tom_image,'green4days2_hdrOff.png')
-            threshold = 3.5;
-        elseif strcmp(tom_image,'lightOr_2_hdrOff.png')
-            threshold = 3.0;
-        elseif strcmp(tom_image,'sand2.png')
-            threshold = 3.0;
-        elseif strcmp(tom_image,'skin.png')
-            threshold = 2.5;
-        elseif strcmp(tom_image,'zpeppers.png')
-            threshold = 3.5;
-        end
+
         
         % remove the colors that fall within the delta E threshold
         % indices 1-3 will not be touched
@@ -92,7 +76,7 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         % darker than we'd like it to be. for images that had too many dark
         % colors, we change the weight of the average here so that more
         % dark colors are deleted than light ones
-        make_plot = 0;
+        make_plot = 1;
         if(a > array_length)
             
             weight = 5;
@@ -201,18 +185,20 @@ end
 %creates a list of colors to be used for the array
 function array_img_list = tom_color_array_list(img)
      % segements the image into 9 sections:
-     %    [s_1   s_2   s_3]
-     %    [s_4   s_5   s_6]
-     %    [s_7   s_8   s_9]
-     s_1 = img(1:5, 1:5, :);
-     s_2 = img(1:5, 6:11, :);
-     s_3 = img(1:5, 12:16, :);
-     s_4 = img(6:11, 1:5, :);
-     s_5 = img(6:11, 6:11, :);
-     s_6 = img(6:11, 12:16, :);
-     s_7 = img(12:16, 1:5, :);
-     s_8 = img(12:16, 6:11, :);
-     s_9 = img(12:16, 12:16, :);
+     %    s_1 top left quadrant
+     %    s_2 top right quadrant
+     %    s_3 bottom left quadrant
+     %    s_4 bottom right quadrant
+     %    s_5 center column
+     %    s_6 center row
+     %    s_7 center quadrant
+     s_1 = img(1:8, 1:8, :);
+     s_2 = img(1:8, 9:16, :);
+     s_3 = img(9:16, 1:8, :);
+     s_4 = img(9:16, 9:16, :);
+     s_5 = img(1:16, 4:12, :);
+     s_6 = img(4:12, 1:16, :);
+     s_7 = img(4:12, 4:12, :);
 
     % identifies the most saturated pixel in each section and full image
     s_1_sat_color = most_sat(s_1);
@@ -222,8 +208,6 @@ function array_img_list = tom_color_array_list(img)
     s_5_sat_color = most_sat(s_5);
     s_6_sat_color = most_sat(s_6);
     s_7_sat_color = most_sat(s_7);
-    s_8_sat_color = most_sat(s_8);
-    s_9_sat_color = most_sat(s_9);
     full_sat_color = most_sat(img);
     
     % identifies the most chromatic pixel in each section and full image
@@ -234,8 +218,6 @@ function array_img_list = tom_color_array_list(img)
     s_5_chr_color = most_chr(s_5);
     s_6_chr_color = most_chr(s_6);
     s_7_chr_color = most_chr(s_7);
-    s_8_chr_color = most_chr(s_8);
-    s_9_chr_color = most_chr(s_9);
     full_chr_color = most_chr(img);
     
     % creates an average color from each section and the whole image
@@ -246,12 +228,10 @@ function array_img_list = tom_color_array_list(img)
     s_5_avg = avg_color(s_5);
     s_6_avg = avg_color(s_6);
     s_7_avg = avg_color(s_7);
-    s_8_avg = avg_color(s_8);
-    s_9_avg = avg_color(s_9);
     full_avg = avg_color(img);
-    array_img_list = [full_avg, full_sat_color, full_chr_color, s_1_sat_color, s_2_sat_color, s_3_sat_color, s_4_sat_color, s_5_sat_color, s_6_sat_color, s_7_sat_color, s_8_sat_color, s_9_sat_color];
-    array_img_list = [array_img_list s_1_chr_color, s_2_chr_color, s_3_chr_color, s_4_chr_color, s_5_chr_color, s_6_chr_color, s_7_chr_color, s_8_chr_color, s_9_chr_color];
-    array_img_list = [array_img_list s_1_avg, s_2_avg, s_3_avg, s_4_avg, s_5_avg, s_6_avg, s_7_avg, s_8_avg, s_9_avg];
+    array_img_list = [full_avg, full_sat_color, full_chr_color, s_1_sat_color, s_2_sat_color, s_3_sat_color, s_4_sat_color, s_5_sat_color, s_6_sat_color, s_7_sat_color];
+    array_img_list = [array_img_list s_1_chr_color, s_2_chr_color, s_3_chr_color, s_4_chr_color, s_5_chr_color, s_6_chr_color, s_7_chr_color];
+    array_img_list = [array_img_list s_1_avg, s_2_avg, s_3_avg, s_4_avg, s_5_avg, s_6_avg, s_7_avg];
     
 end
 
