@@ -10,7 +10,7 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         %image file name
         tom_image = ImageFiles(j).name;
         
-        if strcmp(tom_image, 'zpeppers.png') % for debugging one image at a time
+        if ~strcmp(tom_image, '') % for debugging one image at a time
         
         %% full path names
         tom_img_path = "crop_768x768/" + tom_image;
@@ -43,7 +43,7 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         tom_img_16_scramble = enlarge_pixels_768(tom_img_16_scramble);
         imwrite(tom_img_16_scramble, tom_img_16_scramble_pth);
 
-        tom_img_array_list = tom_color_array_list(tom_img_16);
+        tom_img_array_list = tom_color_array_list(tom_img_16, 3);
         tom_img_16 = enlarge_pixels_768(tom_img_16);
         imwrite(tom_img_16, tom_img_16_pth);
         array_colors_img_pth = "array_colors_image/" + tom_image;
@@ -55,11 +55,14 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         tom_img_lab = rgb2lab(squeeze(tom_img_array_list)); % squeeze to convert 1x20x3 to 20x3
         threshold = 3.0; % how many delta E's apart the colors must be
         
-        % this is where we change the delta E threshold for each individual
-        % image. Most stay at 2.0 but these images had too many colors so
-        % the threshold was increased
-
+        % make two new colors: add chroma to the most chromatic color
+        % and to the mean
+        newColor = add_chroma(tom_img_lab(1,2), tom_img_lab(1,3), tom_img_lab(1,1), 5);
+        chromaPlusChroma = newColor;
+        newColor = add_chroma(tom_img_lab(2,2), tom_img_lab(2,3), tom_img_lab(2,1), 5);
+        meanPlusChroma = newColor;
         
+        tom_img_lab = [tom_img_lab(1:2,:,:); chromaPlusChroma; meanPlusChroma; tom_img_lab(3:end, :, :)];
         % remove the colors that fall within the delta E threshold
         % indices 1-3 will not be touched
         tom_img_lab = delete_similar_colors(tom_img_lab, threshold);
@@ -76,42 +79,16 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         % darker than we'd like it to be. for images that had too many dark
         % colors, we change the weight of the average here so that more
         % dark colors are deleted than light ones
-        make_plot = 1;
+        make_plot = 0;
         if(a > array_length)
-            
-            weight = 5;
-            
-            if strcmp(tom_image, 'gold_2_7days_hdrOff.png')
-                weight = 3;
-            elseif strcmp(tom_image,'green4days2_hdrOff.png')
-                weight = 3;
-            elseif strcmp(tom_image,'green_2_17days_1_hdrOff.png')
-                weight = 0;
-            elseif strcmp(tom_image,'green_2_2_hdrOff.png')
-                weight = 1;
-            elseif strcmp(tom_image,'mysteryLightOr_hdrOff.png')
-                weight = 3;
-            elseif strcmp(tom_image,'redBaseBlack1_hdrOff.png')
-                weight = 0;
-            elseif strcmp(tom_image,'redBaseGreen1_hdrOff.png')
-                weight = 1;
-            elseif strcmp(tom_image,'sand2.png')
-                weight = -6;
-            elseif strcmp(tom_image,'skin.png')
-                weight = 100;
-            elseif strcmp(tom_image,'wood.png')
-                weight = 100;
-            else
-                weight = 5;
-            end
-            
+                        
             if(make_plot == 1)
                 plot_Lab(4,tom_img_lab(:,:,:)',0,'r',70,0);
                 %plot_Lab(3,tom_img_lab(:,:,:)',1,[0.5 0.5 0.5],70,0);
             end
             
             % get the mean lightness so that we can throw out the outliers
-            mean_lightness = tom_img_lab(1,1) + weight;
+            mean_lightness = tom_img_lab(1,1);
             
             % calculate the absolute values of all data points - mean_lightness
             % this will help us identify which data points are far off
@@ -132,7 +109,6 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
             end
             
         end
-        
 
         % this line is here for debugging purposes to keep track of the
         % number of colors. variables unused
@@ -183,7 +159,7 @@ function img = resize_img(img, n, offset)
 end
 
 %creates a list of colors to be used for the array
-function array_img_list = tom_color_array_list(img)
+function array_img_list = tom_color_array_list(img, type)
      % segements the image into 9 sections:
      %    s_1 top left quadrant
      %    s_2 top right quadrant
@@ -199,16 +175,45 @@ function array_img_list = tom_color_array_list(img)
      s_5 = img(1:16, 4:12, :);
      s_6 = img(4:12, 1:16, :);
      s_7 = img(4:12, 4:12, :);
+     
+     if type == 2
+         % skin segments
+         %     1 2 3
+         %     4 5 6
+         %     7 8 9
+         %
+         %    t_1 left cheek (1, 4)
+         %    t_2 right cheek (3, 6)
+         %    t_3 forehead (1, 2, 3)
+         %    t_4 chin ("bottom" quadrant)
+         %    t_5 center column
+         %    t_6 center row
+         %    t_7 center quadrant
+         s_1 = img(1:10, 1:6, :);
+         s_2 = img(1:10, 11:16, :);
+         s_3 = img(1:5, 1:16, :);
+         s_4 = img(8:15, 4:11, :);
+     elseif type == 3
+         % wine segments
+         %     in strips from top to bottom
+         s_1 = img(1:2,1:16,:);
+         s_2 = img(3:4,1:16,:);
+         s_3 = img(5:7,1:16,:);
+         s_4 = img(8:10,1:16,:);
+         s_5 = img(11:12,1:16,:);
+         s_6 = img(13:14,1:16,:);
+         s_7 = img(15:16,1:16,:);
+     end
 
     % identifies the most saturated pixel in each section and full image
-    s_1_sat_color = most_sat(s_1);
-    s_2_sat_color = most_sat(s_2);
-    s_3_sat_color = most_sat(s_3);
-    s_4_sat_color = most_sat(s_4);
-    s_5_sat_color = most_sat(s_5);
-    s_6_sat_color = most_sat(s_6);
-    s_7_sat_color = most_sat(s_7);
-    full_sat_color = most_sat(img);
+%     s_1_sat_color = most_sat(s_1);
+%     s_2_sat_color = most_sat(s_2);
+%     s_3_sat_color = most_sat(s_3);
+%     s_4_sat_color = most_sat(s_4);
+%     s_5_sat_color = most_sat(s_5);
+%     s_6_sat_color = most_sat(s_6);
+%     s_7_sat_color = most_sat(s_7);
+%     full_sat_color = most_sat(img);
     
     % identifies the most chromatic pixel in each section and full image
     s_1_chr_color = most_chr(s_1);
@@ -229,8 +234,9 @@ function array_img_list = tom_color_array_list(img)
     s_6_avg = avg_color(s_6);
     s_7_avg = avg_color(s_7);
     full_avg = avg_color(img);
-    array_img_list = [full_avg, full_sat_color, full_chr_color, s_1_sat_color, s_2_sat_color, s_3_sat_color, s_4_sat_color, s_5_sat_color, s_6_sat_color, s_7_sat_color];
-    array_img_list = [array_img_list s_1_chr_color, s_2_chr_color, s_3_chr_color, s_4_chr_color, s_5_chr_color, s_6_chr_color, s_7_chr_color];
+        
+    %array_img_list = [full_avg, full_sat_color, full_chr_color, s_1_sat_color, s_2_sat_color, s_3_sat_color, s_4_sat_color, s_5_sat_color, s_6_sat_color, s_7_sat_color];
+    array_img_list = [full_avg, full_chr_color, s_1_chr_color, s_2_chr_color, s_3_chr_color, s_4_chr_color, s_5_chr_color, s_6_chr_color, s_7_chr_color];
     array_img_list = [array_img_list s_1_avg, s_2_avg, s_3_avg, s_4_avg, s_5_avg, s_6_avg, s_7_avg];
     
 end
@@ -245,6 +251,20 @@ function sat_color = most_sat(img)
     [max_value, c] = max(max_value_c);
     % uses index of max saturation to identify the color in RGB
     sat_color = img(index(c), c, :); 
+end
+
+function new_point = add_chroma(x2, y2, z2, d)
+        dPrime = sqrt(x2^2+y2^2+z2^2);
+        x1 = 0;
+        y1 = 0;
+        z1 = 0;
+        
+        x = x2+(d/dPrime)*x2;
+        y = y2+(d/dPrime)*y2;
+        z = z2+(d/dPrime)*z2;
+        
+        new_point = [z x y];
+
 end
 
 % identifies the most chromatic pixel
@@ -269,15 +289,34 @@ end
 
 % makes an average color for each section and the full image
 function avg_clr = avg_color(img)
+    % remove pure black pixels
+    %data( all(~img,2), : ) = [];
+
     avg_clr = zeros(1, 1, 3, 'uint8'); %initializes avg color to (0,0,0)
+    
     red = img(:, :, 1); %grabs red from the image
-    red_avg = mean( red, 'all' ); %takes the average of the reds
-    avg_clr(1,1,1) = red_avg; %assigns the avg of the reds
+    red = red(:);
     green = img(:, :, 2); %grabs green from the image
-    green_avg = mean( green, 'all' ); %takes the avg of the greens
-    avg_clr(1,1,2) = green_avg; %assigns the avg fo the greens
+    green = green(:);
     blue = img(:, :, 3); %grabs blue from the image
+    blue = blue(:);
+    
+    [i j] = size(red);
+    while i > 0
+        if(red(i) == 0 && green(i) == 0 && blue(i) == 0)
+            red(i) = [];
+            green(i) = [];
+            blue(i) = [];
+        end
+        i = i - 1;
+    end
+    
+    red_avg = mean( red, 'all' ); %takes the average of the reds
+    green_avg = mean( green, 'all' ); %takes the avg of the greens
     blue_avg = mean( blue, 'all' ); %takes the avg of the blues
+
+    avg_clr(1,1,1) = red_avg; %assigns the avg of the reds
+    avg_clr(1,1,2) = green_avg; %assigns the avg fo the greens
     avg_clr(1,1,3) = blue_avg; %assigns the avg of the blues
 end
 
