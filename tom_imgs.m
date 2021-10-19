@@ -43,7 +43,16 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         tom_img_16_scramble = enlarge_pixels_768(tom_img_16_scramble);
         imwrite(tom_img_16_scramble, tom_img_16_scramble_pth);
 
-        tom_img_array_list = tom_color_array_list(tom_img_16, 3);
+        mode = 1; % default
+        s2 = 'model';
+        s3 = 'dsc';
+        if strncmpi(tom_image,s2,5) == 1
+            mode = 2;
+        elseif strncmpi(tom_image,s3,3) == 1
+            mode = 3;
+        end
+        
+        tom_img_array_list = tom_color_array_list(tom_img_16, mode);
         tom_img_16 = enlarge_pixels_768(tom_img_16);
         imwrite(tom_img_16, tom_img_16_pth);
         array_colors_img_pth = "array_colors_image/" + tom_image;
@@ -52,7 +61,7 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         array_width = 3;
         array_height = 3;
         array_length = array_width*array_height;
-        tom_img_lab = rgb2lab(squeeze(tom_img_array_list)); % squeeze to convert 1x20x3 to 20x3
+        tom_img_lab = rgb2lab(tom_img_array_list); % squeeze to convert 1x20x3 to 20x3
         threshold = 3.0; % how many delta E's apart the colors must be
         
         % make two new colors: add chroma to the most chromatic color
@@ -80,6 +89,7 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         % colors, we change the weight of the average here so that more
         % dark colors are deleted than light ones
         make_plot = 0;
+        [a b] = size(tom_img_lab);
         if(a > array_length)
                         
             if(make_plot == 1)
@@ -89,6 +99,14 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
             
             % get the mean lightness so that we can throw out the outliers
             mean_lightness = tom_img_lab(1,1);
+            
+            if strcmp(tom_image, 'DSC_0021.png')
+                %mean_lightness = 11.0240;
+                mean_lightness = 100;
+            elseif strcmp(tom_image, 'DSC_0025.png')
+                %mean_lightness = 13.0899;
+                mean_lightness = 100;
+            end
             
             % calculate the absolute values of all data points - mean_lightness
             % this will help us identify which data points are far off
@@ -238,6 +256,10 @@ function array_img_list = tom_color_array_list(img, type)
     %array_img_list = [full_avg, full_sat_color, full_chr_color, s_1_sat_color, s_2_sat_color, s_3_sat_color, s_4_sat_color, s_5_sat_color, s_6_sat_color, s_7_sat_color];
     array_img_list = [full_avg, full_chr_color, s_1_chr_color, s_2_chr_color, s_3_chr_color, s_4_chr_color, s_5_chr_color, s_6_chr_color, s_7_chr_color];
     array_img_list = [array_img_list s_1_avg, s_2_avg, s_3_avg, s_4_avg, s_5_avg, s_6_avg, s_7_avg];
+    
+    % squeeze and delete black pixels
+    array_img_list = squeeze(array_img_list)
+    array_img_list( ~any(array_img_list,2), : ) = [];
     
 end
 
