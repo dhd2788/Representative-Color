@@ -4,6 +4,7 @@ main_f();
 function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
 
     ImageFiles = dir("crop_768x768/*.png");
+    ScrambleFiles = dir("scramble_768x768/*.png");
     
     for j = 1:length(ImageFiles)
         
@@ -28,18 +29,25 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         % creates 16x16 image
         tom_img_16 = resize_img(tom_img_open, 48, 0);
         
-        % there were some "bad" pixels on some of the images. replace them
-        % here
-        if strcmp(tom_image, 'green22days1_hdrOff.png')
-            tom_img_16(16, 8, :) = [163 136 59];
-        elseif strcmp(tom_image,'redBaseBlack1_hdrOff.png')
-            tom_img_16(5, 6, :) = [244 54 35];
-            tom_img_16(10, 2, :) = [221 44 36];
-            tom_img_16(10, 3, :) = [224 36 30];
+        %% create scrambled image
+        
+        % check if there's a scramble file available
+        scramble_name = tom_image;
+        scrambled_img = tom_img_open;
+        scramble_true = 0; % false by default
+        for i = 1:length(ScrambleFiles)
+            scrmb = ScrambleFiles(i).name;
+            if strcmp(scrmb, scramble_name)
+                scrambled_img = resize_img(imread(ScrambleFiles(i).folder + "\" + scramble_name), 48, 0);
+                scramble_true = 1;
+            end
         end
         
-        %% create scrambled image
-        tom_img_16_scramble = scramble_img(tom_img_16);
+        if scramble_true ==0
+            scrambled_img = tom_img_16;
+        end
+
+        tom_img_16_scramble = scramble_img(scrambled_img, scramble_true); % TODO
         tom_img_16_scramble = enlarge_pixels_768(tom_img_16_scramble);
         imwrite(tom_img_16_scramble, tom_img_16_scramble_pth);
 
@@ -58,8 +66,8 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         array_colors_img_pth = "array_colors_image/" + tom_image;
         
         %% create array images
-        array_width = 3;
-        array_height = 3;
+        array_width = 2;
+        array_height = 5;
         array_length = array_width*array_height;
         tom_img_lab = rgb2lab(tom_img_array_list); % squeeze to convert 1x20x3 to 20x3
         threshold = 3.0; % how many delta E's apart the colors must be
@@ -258,7 +266,7 @@ function array_img_list = tom_color_array_list(img, type)
     array_img_list = [array_img_list s_1_avg, s_2_avg, s_3_avg, s_4_avg, s_5_avg, s_6_avg, s_7_avg];
     
     % squeeze and delete black pixels
-    array_img_list = squeeze(array_img_list)
+    array_img_list = squeeze(array_img_list);
     array_img_list( ~any(array_img_list,2), : ) = [];
     
 end
@@ -342,7 +350,7 @@ function avg_clr = avg_color(img)
     avg_clr(1,1,3) = blue_avg; %assigns the avg of the blues
 end
 
-%creates an array of 20 colors with gray (171,171,171) background
+%creates an array of colors with gray (171,171,171) background
 % rand: 0 to keep the order, 1 to shuffle
 function color_array_img = color_array(color_list, rand, x, y)
     color_array_img = 171*ones(x*2+1, y*2+1, 3, 'uint8'); %initializes background
@@ -350,7 +358,7 @@ function color_array_img = color_array(color_list, rand, x, y)
     if rand == 0
         rand_ints = [1:x*y];
     elseif rand ~= 0
-        rand_ints = randperm(x*y, x*y); %creates a list of random ints 1-20 (no repeats)
+        rand_ints = randperm(x*y, x*y); %creates a list of random ints (no repeats)
     end
     
     i = 1;
