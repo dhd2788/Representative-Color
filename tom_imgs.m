@@ -6,6 +6,8 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
     ImageFiles = dir("crop_768x768/*.png");
     ScrambleFiles = dir("scramble_768x768/*.png");
     
+    final_export = [""];
+    
     for j = 1:length(ImageFiles)
         
         %image file name
@@ -67,7 +69,7 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         
         %% create array images
         array_width = 2;
-        array_height = 5;
+        array_height = 4;
         array_length = array_width*array_height;
         tom_img_lab = rgb2lab(tom_img_array_list); % squeeze to convert 1x20x3 to 20x3
         threshold = 3.0; % how many delta E's apart the colors must be
@@ -143,6 +145,18 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         % convert back to RGB, then append with black if there are less
         % than the required number of colors (helpful for debugging)
         tom_img_array_list_new = lab2rgb(tom_img_lab);
+        
+        final_export(j,1) = tom_image;
+        
+        for x = 1 : 8
+            str = num2str(tom_img_array_list_new(x,1));
+            for y = 2 : 3
+                str = append(str, ', ', num2str(tom_img_array_list_new(x,y)));
+            end
+            
+            final_export(j,x+1) = str;
+        end
+        
         sizearr = size(tom_img_array_list_new);
         tom_img_array_list_new = [tom_img_array_list_new ; zeros(array_length-sizearr(1),3)];
         tom_img_array_list_new = tom_img_array_list_new(1:array_length,:);
@@ -176,6 +190,9 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         end
         
     end
+    
+    writematrix(final_export, 'results.csv');
+    
 end
 
 % takes the nth pixel in each nth row and discards the rest
