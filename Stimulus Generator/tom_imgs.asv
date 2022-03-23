@@ -148,12 +148,13 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         
         final_export(j,1) = tom_image;
         
-        for x = 1 : numel(tom_img_array_list_new) / 3
+        
+        for x = 1 : 8
             str = num2str(tom_img_array_list_new(x,1));
             for y = 2 : 3
                 str = append(str, ', ', num2str(tom_img_array_list_new(x,y)));
             end
-
+            
             final_export(j,x+1) = str;
         end
         
