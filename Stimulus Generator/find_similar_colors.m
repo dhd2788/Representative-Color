@@ -9,7 +9,7 @@ pairs = [];
 
     for i = 1 : n
         for j = i+1 : n
-            if deltaE2000(arr(i,:), arr(j,:)) < threshold
+            if deltaE2000(arr(i,1:3), arr(j,1:3)) < threshold
                     pairs = [pairs ; [i j]];
             end
         end

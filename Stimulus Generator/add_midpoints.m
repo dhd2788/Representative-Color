@@ -29,5 +29,6 @@ function out = add_midpoint(in, i1, i2)
     P1 = in(i1,:);
     P2 = in(i2,:);
     out = (P1(:) + P2(:)).'/2;
+    out(:,4) = -1;
     out = [in ; out];
 end

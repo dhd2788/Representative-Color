@@ -71,14 +71,17 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         array_width = 2;
         array_height = 4;
         array_length = array_width*array_height;
-        tom_img_lab = rgb2lab(tom_img_array_list); % squeeze to convert 1x20x3 to 20x3
+        tom_img_lab = rgb2lab(tom_img_array_list(:,1:3)); % squeeze to convert 1x20x3 to 20x3
+        tom_img_lab(:,4) = tom_img_array_list(:,4);
         threshold = 3.0; % how many delta E's apart the colors must be
         
         % make two new colors: add chroma to the most chromatic color
         % and to the mean
         newColor = add_chroma(tom_img_lab(1,2), tom_img_lab(1,3), tom_img_lab(1,1), 5);
+        newColor(:,4) = 3;
         chromaPlusChroma = newColor;
         newColor = add_chroma(tom_img_lab(2,2), tom_img_lab(2,3), tom_img_lab(2,1), 5);
+        newColor(:,4) = 4;
         meanPlusChroma = newColor;
         
         tom_img_lab = [tom_img_lab(1:2,:,:); chromaPlusChroma; meanPlusChroma; tom_img_lab(3:end, :, :)];
@@ -144,28 +147,28 @@ function [tom_img_open, low_res_16, low_res_8, rand] = main_f()
         
         % convert back to RGB, then append with black if there are less
         % than the required number of colors (helpful for debugging)
-        tom_img_array_list_new = lab2rgb(tom_img_lab);
+        tom_img_array_list_new = lab2rgb(tom_img_lab(:,1:3));
+        tom_img_array_list_new(:,4) = tom_img_lab(:,4);
         
         final_export(j,1) = tom_image;
         
-        
-        for x = 1 : 8
+        for x = 1 : numel(tom_img_array_list_new) / 4
             str = num2str(tom_img_array_list_new(x,1));
-            for y = 2 : 3
+            for y = 2 : 4
                 str = append(str, ', ', num2str(tom_img_array_list_new(x,y)));
             end
-            
+
             final_export(j,x+1) = str;
         end
         
         sizearr = size(tom_img_array_list_new);
         tom_img_array_list_new = [tom_img_array_list_new ; zeros(array_length-sizearr(1),3)];
         tom_img_array_list_new = tom_img_array_list_new(1:array_length,:);
-        tom_img_array_list_new = reshape(tom_img_array_list_new, [1,array_length,3]); % give back the useless dimension for calling the color_array function
+        tom_img_array_list_new = reshape(tom_img_array_list_new, [1,array_length,4]); % give back the useless dimension for calling the color_array function
         tom_img_array_list_new = uint8(tom_img_array_list_new.*255); %change from double to uint8
         color_array_img_new = color_array(tom_img_array_list_new,0,array_width, array_height);
         color_array_img_new = enlarge_pixels(color_array_img_new);
-        imwrite(tom_img_array_list_new, array_colors_img_pth)
+        imwrite(tom_img_array_list_new(1:3), array_colors_img_pth);
         
         imwrite(color_array_img_new, color_array_img_pth);
         
@@ -248,16 +251,6 @@ function array_img_list = tom_color_array_list(img, type)
          s_6 = img(13:14,1:16,:);
          s_7 = img(15:16,1:16,:);
      end
-
-    % identifies the most saturated pixel in each section and full image
-%     s_1_sat_color = most_sat(s_1);
-%     s_2_sat_color = most_sat(s_2);
-%     s_3_sat_color = most_sat(s_3);
-%     s_4_sat_color = most_sat(s_4);
-%     s_5_sat_color = most_sat(s_5);
-%     s_6_sat_color = most_sat(s_6);
-%     s_7_sat_color = most_sat(s_7);
-%     full_sat_color = most_sat(img);
     
     % identifies the most chromatic pixel in each section and full image
     s_1_chr_color = most_chr(s_1);
@@ -268,6 +261,15 @@ function array_img_list = tom_color_array_list(img, type)
     s_6_chr_color = most_chr(s_6);
     s_7_chr_color = most_chr(s_7);
     full_chr_color = most_chr(img);
+
+    s_1_chr_color(:,:,4) = 2;
+    s_2_chr_color(:,:,4) = 2;
+    s_3_chr_color(:,:,4) = 2;
+    s_4_chr_color(:,:,4) = 2;
+    s_5_chr_color(:,:,4) = 2;
+    s_6_chr_color(:,:,4) = 2;
+    s_7_chr_color(:,:,4) = 2;
+    full_chr_color(:,:,4) = 2; 
     
     % creates an average color from each section and the whole image
     s_1_avg = avg_color(s_1);
@@ -278,6 +280,15 @@ function array_img_list = tom_color_array_list(img, type)
     s_6_avg = avg_color(s_6);
     s_7_avg = avg_color(s_7);
     full_avg = avg_color(img);
+
+    s_1_avg(:,:,4) = 1;
+    s_2_avg(:,:,4) = 1;
+    s_3_avg(:,:,4) = 1;
+    s_4_avg(:,:,4) = 1;
+    s_5_avg(:,:,4) = 1;
+    s_6_avg(:,:,4) = 1;
+    s_7_avg(:,:,4) = 1;
+    full_avg(:,:,4) = 1;
         
     %array_img_list = [full_avg, full_sat_color, full_chr_color, s_1_sat_color, s_2_sat_color, s_3_sat_color, s_4_sat_color, s_5_sat_color, s_6_sat_color, s_7_sat_color];
     array_img_list = [full_avg, full_chr_color, s_1_chr_color, s_2_chr_color, s_3_chr_color, s_4_chr_color, s_5_chr_color, s_6_chr_color, s_7_chr_color];
