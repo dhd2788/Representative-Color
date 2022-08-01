@@ -35,6 +35,7 @@ colors_order = readtable("colors_order.xlsx");
 % read in results file
 results_count_offline = readtable("results_count.xlsx");
 results_count_online  = readtable("results_count.xlsx");
+results_count_ar_temp = readtable("results_count_ar.xlsx");
 results_count_ar      = readtable("results_count_ar.xlsx");
 
 % loop through each online file
@@ -68,6 +69,25 @@ for i = 1:length(U)
 
         results_count_online{j,choice+1} = results_count_online{j,choice+1} + 1;
     end
+end
+
+% loop through the AR files again and fix the color order
+[len,~] = size(results_count_ar_temp);
+for i = len
+
+    if results_count_ar_temp{i,2} == 1 || results_count_ar_temp{i,2} == 4
+        
+        % loop through all the colors
+        for j = 1:8
+            
+            % for each color, find its new position and slot the results in
+            % there
+            color_idx_new = 
+
+        end
+
+    end
+
 end
 
 % loop through each offline file
@@ -122,55 +142,7 @@ for i = 1:length(V)
     end
 end
 
-results_count_ar_temp = results_count_ar;
-
-% loop through the AR files again and fix the color order
-[len,~] = size(results_count_ar_temp);
-for i = 1:len
-
-    if results_count_ar_temp{i,2} == 1 || results_count_ar_temp{i,2} == 4
-
-        % figure out what file we're on
-        idx = find(strcmp(colors_order{:,1},results_count_ar_temp{i,1}));
-        
-        % loop through all the colors
-        for j = 1:8
-            
-            % get the new index of the color
-            color_idx_old = j;
-            color_idx_new = colors_order{idx,j+1};
-
-            % offset the index by the number of columns
-            color_idx_old = color_idx_old + 3;
-            color_idx_new = color_idx_new + 3;
-
-            % slot in the new data
-            results_count_ar{i,color_idx_old} = results_count_ar_temp{i,color_idx_new};
-
-        end
-    end
-end
-
-% re-order colors_ar
-colors_ar_temp = colors_ar;
-
-[len,~] = size(colors_ar_temp);
-for i = 1:len
-    for j = 1:8
-        color_idx_old = j;
-        color_idx_new = colors_order{i,j+1};
-
-        color_idx_old = color_idx_old + 1;
-        color_idx_new = color_idx_new + 1;
-
-        colors_ar{i,color_idx_new} = colors_ar_temp{i,color_idx_old};
-    end
-end
-
-
-
 clear background block choice choiceName fileName imageName i index j T U V
-clear colors_ar_temp results_count_ar_temp color_idx_old color_idx_new idx len
 
 %% generate pretty plots/graphs for the AR results
 for i = 1:10
