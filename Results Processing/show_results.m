@@ -301,15 +301,17 @@ for i = 1:10
         text = insertText(fun,[1 50],1.3135,'AnchorPoint','LeftBottom');
         
         imshow(fun);
+
+        save_image = 0;
+        if save_image == 1
+            imwrite(fun, "avg_" + image_name);
+        end
     end
 
-    save_image = 0;
-    if save_image == 1
-        figure
-        fun = fun_image_ar("C:\Users\darad\Desktop\Research Project\Representative-Color\Pavlovia Study Generator\resources\", image_name, lab2rgb(averages)*255);
-        imshow(fun);
-        imwrite(fun, "avg_" + image_name);
-    end
+    % plot that fixes luminance
+    figure
+    xlabel('luminance')
+    ylabel('frequency of choice')
 
     %figure
     %plot_Lab(4,average_lab',0,'r',30,0);
@@ -416,7 +418,20 @@ for i = 1:20
 
     figure
     plot_Lab(4,average_lab',0,'r',30,0);
-    plot_Lab(4,averages',0,'r',10,0)
+    plot_Lab(4,averages',0,'r',10,0);
+
+    figure
+    xlimmin = min(labs(:,1));
+    xlimmax = max(labs(:,1));
+
+    xlim([xlimmin-1 xlimmax+1])
+
+    hold on
+    for j = 1:8
+        sum = t1(j)+t2(j)+t3(j)+t4(j);
+        plot(labs(j,1),sum,'r*')
+    end
+    hold off
 
     close all
 
@@ -480,6 +495,12 @@ for i = 1:20
         else
             regions_list(i,j) = -1;
         end
+
+        % plot that fixes luminance
+        figure
+        xlabel('luminance')
+        ylabel('frequency of choice')
+
 
 
     end
@@ -786,14 +807,15 @@ pixels(size_x-768+1:size_x, size_y-768+1:size_y,:) = full(1:768, 1:768, :);
 
 % add text
 averages = rgb2lab(averages./255);
-averages(4,:) = averages(4,:) - averages(3,:);
-averages(3,:) = averages(3,:) - averages(2,:);
+averages(4,:) = averages(4,:) - averages(1,:);
+averages(3,:) = averages(3,:) - averages(1,:);
 averages(2,:) = averages(2,:) - averages(1,:);
 space = 10;
-pixels = insertText(pixels, [space     768     ; space     818     ; space     868     ], ["L* = " + averages(1,1) ; "a* = " + averages(1,2); "b* = " + averages(1,3)], 'FontSize', 40, 'TextColor','white', 'BoxOpacity',0);
-pixels = insertText(pixels, [space+968 768     ; space+968 818     ; space+968 868    ], ["L* = " + averages(2,1) ; "a* = " + averages(2,2); "b* = " + averages(2,3)], 'FontSize', 40, 'TextColor','white', 'BoxOpacity',0);
-pixels = insertText(pixels, [space     768+200 ; space     818+200 ; space     868+200], ["L* = " + averages(3,1) ; "a* = " + averages(3,2); "b* = " + averages(3,3)], 'FontSize', 40, 'TextColor','white', 'BoxOpacity',0);
-pixels = insertText(pixels, [space+968 768+200 ; space+968 818+200 ; space+968 868+200], ["L* = " + averages(4,1) ; "a* = " + averages(4,2); "b* = " + averages(4,3)], 'FontSize', 40, 'TextColor','white', 'BoxOpacity',0);
+decimal_places = 2;
+pixels = insertText(pixels, [space     768     ; space     818     ; space     868     ],["L* = " + round(averages(1,1),decimal_places,'decimals') ; "a* = " + round(averages(1,2),decimal_places,'decimals') ; "b* = " + round(averages(1,3),decimal_places,'decimals')], 'FontSize', 40, 'TextColor','white', 'BoxOpacity',0);
+pixels = insertText(pixels, [768*2+400 768     ; 768*2+400 818     ; 768*2+400 868    ], ["L* = " + round(averages(2,1),decimal_places,'decimals') ; "a* = " + round(averages(2,2),decimal_places,'decimals') ; "b* = " + round(averages(2,3),decimal_places,'decimals')], 'FontSize', 40, 'TextColor','white', 'BoxOpacity',0, 'AnchorPoint','RightTop');
+pixels = insertText(pixels, [space     768+200 ; space     818+200 ; space     868+200], ["L* = " + round(averages(3,1),decimal_places,'decimals') ; "a* = " + round(averages(3,2),decimal_places,'decimals') ; "b* = " + round(averages(3,3),decimal_places,'decimals')], 'FontSize', 40, 'TextColor','white', 'BoxOpacity',0);
+pixels = insertText(pixels, [768*2+400 768+200 ; 768*2+400 818+200 ; 768*2+400 868+200], ["L* = " + round(averages(4,1),decimal_places,'decimals') ; "a* = " + round(averages(4,2),decimal_places,'decimals') ; "b* = " + round(averages(4,3),decimal_places,'decimals')], 'FontSize', 40, 'TextColor','white', 'BoxOpacity',0, 'AnchorPoint','RightTop');
 
 end
 
